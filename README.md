@@ -117,8 +117,7 @@ Defines each signer.
 | `attachments`  | Optional files required to be uploaded by signer  |
 
 **Available Roles:**
-- `1own`, `2own`, `3own`, `4own`
-- `1authind` (authorized individual)
+- `1own`, `2own`, `3own`, `4own`,`1authind`
 
 ### Sample Scenarios
 
