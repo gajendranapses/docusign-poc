@@ -1,270 +1,271 @@
-import { getDocusignToken } from '@/lib/api-services/docusign/auth';
-import { getDocusignBaseUrl } from '@/lib/api-services/docusign/base';
-import { createDocusignEnvelope } from '@/lib/api-services/docusign/envelope';
-import { getQuikToken } from '@/lib/api-services/quik/auth';
-import { generateBulkQuikPdf } from '@/lib/api-services/quik/pdf';
+import { getDocusignToken } from "@/lib/api-services/docusign/auth";
+import { getDocusignBaseUrl } from "@/lib/api-services/docusign/base";
+import {
+  createDocusignEnvelope,
+  Tabs,
+} from "@/lib/api-services/docusign/envelope";
+import { getQuikToken } from "@/lib/api-services/quik/auth";
+import { generateBulkQuikPdf } from "@/lib/api-services/quik/pdf";
+import {
+  BulkQuikSignLocationResponse,
+  fetchBulkQuickPdfSignLocations,
+} from "@/lib/api-services/quik/sign";
 
-const STATIC_FORM_ID = '71259';
+type SignerRoles = "primary" | "secondary";
 
-// ---- Types ----
-
-interface Field {
-  DocusignXCoord: number;
-  DocusignYCoord: number;
-  Page: number;
-  FieldRole: string;
-}
-
-interface QuikFields {
-  SignFields: Field[];
-  SignDateFields: Field[];
-  SignInitialsFields: Field[];
-}
-
-interface FormField {
-  FieldName: string;
-  FieldValue: string;
-}
-
-interface RecipientDetail {
-  email: string;
-  name: string;
-  recipientId: string;
-  documents: {
-    documentId: string;
-    roles: string[];
+interface Form {
+  formId: string;
+  signers: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: SignerRoles;
   }[];
-  attachments?: {
-    documentId: string;
-    name: string;
-    tabLabel: string;
-    pageNumber: string;
-    xPosition: string;
-    yPosition: string;
-    required: boolean;
-  }[];
+  formFields: Record<string, string>;
 }
-
 interface RequestPayload {
   emailSubject: string;
-  formDataPerDocument: {
-    documentId: string;
-    formFields: FormField[];
-  }[];
-  recipientDetails: RecipientDetail[];
-  additionalDocuments?: {
-    documentId: string;
-    documentBase64: string;
-    fileName: string;
-  }[];
-  status?: 'created' | 'sent';
+  forms: Form[];
+  status?: "created" | "sent";
 }
 
-// ---- Helpers ----
+const round = (n: number) => Math.round(n);
 
-function transformToTabs(
-  fields: QuikFields,
-  documentId: string,
-  roles: string[],
+function createTabsFromSignLocation(
+  filteredSignLocation: {
+    SignFields: any[];
+    SignDateFields: any[];
+    SignInitialsFields: any[];
+  },
+  documentId: string
 ) {
-  const round = (n: number) => Math.round(n);
-
-  const filterFieldsByRole = <T extends Field>(items: T[]) =>
-    items.filter((f) => roles.includes(f.FieldRole));
-
-  const signHereTabs = filterFieldsByRole(fields.SignFields).map((field) => ({
-    documentId,
-    pageNumber: field.Page.toString(),
-    xPosition: round(field.DocusignXCoord),
-    yPosition: round(field.DocusignYCoord),
-  }));
-
-  const dateSignedTabs = filterFieldsByRole(fields.SignDateFields).map(
-    (field) => ({
-      documentId,
-      pageNumber: field.Page.toString(),
-      xPosition: round(field.DocusignXCoord),
-      yPosition: round(field.DocusignYCoord),
-    }),
-  );
-
-  const initialHereTabs = filterFieldsByRole(fields.SignInitialsFields).map(
-    (field) => ({
-      documentId,
-      pageNumber: field.Page.toString(),
-      xPosition: round(field.DocusignXCoord),
-      yPosition: round(field.DocusignYCoord),
-    }),
-  );
-
   return {
-    signHereTabs,
-    dateSignedTabs,
-    initialHereTabs,
+    signHereTabs: filteredSignLocation.SignFields.map((sf) => ({
+      documentId,
+      xPosition: round(sf.DocusignXCoord),
+      yPosition: round(sf.DocusignYCoord),
+      pageNumber: sf.Page.toString(),
+    })),
+    initialHereTabs: filteredSignLocation.SignInitialsFields.map((sif) => ({
+      documentId,
+      xPosition: round(sif.DocusignXCoord),
+      yPosition: round(sif.DocusignYCoord),
+      pageNumber: sif.Page.toString(),
+    })),
+    dateSignedTabs: filteredSignLocation.SignDateFields.map((sdf) => ({
+      documentId,
+      xPosition: round(sdf.DocusignXCoord),
+      yPosition: round(sdf.DocusignYCoord),
+      pageNumber: sdf.Page.toString(),
+    })),
   };
 }
 
-// ---- Static Sign Field Configuration ----
+function getSignersImproved(
+  formsWithDocumentId: (Form & { documentId: string })[],
+  quikSignLocations: BulkQuikSignLocationResponse[]
+) {
+  const signersMap = new Map<string, {
+    email: string;
+    name: string;
+    recipientId: string;
+    tabs: Tabs;
+  }>();
 
-const staticSignFields: QuikFields = {
-  SignFields: [
-    {
-      DocusignXCoord: 82.91,
-      DocusignYCoord: 258.75,
-      Page: 7,
-      FieldRole: '1authind',
-    },
-    {
-      DocusignXCoord: 64.56,
-      DocusignYCoord: 452.42,
-      Page: 6,
-      FieldRole: '1own',
-    },
-    {
-      DocusignXCoord: 329.12,
-      DocusignYCoord: 452.42,
-      Page: 6,
-      FieldRole: '2own',
-    },
-    {
-      DocusignXCoord: 62.66,
-      DocusignYCoord: 530.27,
-      Page: 6,
-      FieldRole: '3own',
-    },
-    {
-      DocusignXCoord: 329.75,
-      DocusignYCoord: 530.27,
-      Page: 6,
-      FieldRole: '4own',
-    },
-  ],
-  SignDateFields: [
-    {
-      DocusignXCoord: 221.53,
-      DocusignYCoord: 486.08,
-      Page: 6,
-      FieldRole: '1own',
-    },
-    {
-      DocusignXCoord: 389.25,
-      DocusignYCoord: 292.41,
-      Page: 7,
-      FieldRole: '1authind',
-    },
-    {
-      DocusignXCoord: 486.71,
-      DocusignYCoord: 486.08,
-      Page: 6,
-      FieldRole: '2own',
-    },
-    {
-      DocusignXCoord: 221.53,
-      DocusignYCoord: 563.93,
-      Page: 6,
-      FieldRole: '3own',
-    },
-    {
-      DocusignXCoord: 486.71,
-      DocusignYCoord: 564.56,
-      Page: 6,
-      FieldRole: '4own',
-    },
-  ],
-  SignInitialsFields: [],
-};
+  // Create a map for faster lookup of sign locations
+  const signLocationMap = new Map(
+    quikSignLocations.map(loc => [loc.FormId, loc])
+  );
 
-// ---- API Route Handler ----
+  formsWithDocumentId.forEach((form) => {
+    const signLocation = signLocationMap.get(form.formId);
+    
+    if (!signLocation) {
+      console.warn(`No sign location found for form ${form.formId}`);
+    }
+
+    form.signers.forEach((signer) => {
+      const filteredSignLocation = {
+        SignFields: signLocation?.SignFields?.filter(
+          (sf) => sf.FieldRole === signer.role
+        ) || [],
+        SignDateFields: signLocation?.SignDateFields?.filter(
+          (sdf) => sdf.FieldRole === signer.role
+        ) || [],
+        SignInitialsFields: signLocation?.SignInitialsFields?.filter(
+          (sif) => sif.FieldRole === signer.role
+        ) || [],
+      };
+
+      const existingSigner = signersMap.get(signer.email);
+      const newTabs = createTabsFromSignLocation(filteredSignLocation, form.documentId);
+
+      if (!existingSigner) {
+        signersMap.set(signer.email, {
+          email: signer.email,
+          name: `${signer.firstName} ${signer.lastName}`,
+          recipientId: (signersMap.size + 1).toString(),
+          tabs: {
+            ...newTabs,
+            attachmentTabs: [],
+          },
+        });
+      } else {
+        // Merge tabs for existing signer
+        existingSigner.tabs.signHereTabs.push(...newTabs.signHereTabs);
+        existingSigner.tabs.initialHereTabs.push(...newTabs.initialHereTabs);
+        existingSigner.tabs.dateSignedTabs.push(...newTabs.dateSignedTabs);
+      }
+    });
+  });
+
+  return Array.from(signersMap.values());
+}
+
+function getSigners(
+  formsWIthDocumentId: (Form & { documentId: string })[],
+  quikSignLocations: BulkQuikSignLocationResponse[]
+) {
+  const signers: {
+    email: string;
+    name: string;
+    recipientId: string;
+    tabs: Tabs;
+  }[] = [];
+
+  formsWIthDocumentId.forEach((form) => {
+    const signLocation = quikSignLocations.find(
+      (s) => s.FormId === form.formId
+    );
+    form.signers.forEach((signer) => {
+      const filteredSignLocation = {
+        SignFields:
+          signLocation?.SignFields?.filter(
+            (sf) => sf.FieldRole === signer.role
+          ) || [],
+        SignDateFields:
+          signLocation?.SignDateFields?.filter(
+            (sdf) => sdf.FieldRole === signer.role
+          ) || [],
+        SignInitialsFields:
+          signLocation?.SignInitialsFields?.filter(
+            (sif) => sif.FieldRole === signer.role
+          ) || [],
+      };
+      const currentSigner = signers.find((s) => s.email === signer.email);
+      if (!currentSigner) {
+        signers.push({
+          email: signer.email,
+          name: `${signer.firstName} ${signer.lastName}`,
+          recipientId: (signers.length + 1).toString(),
+          tabs: {
+            signHereTabs: filteredSignLocation.SignFields.map((sf) => ({
+              documentId: form.documentId,
+              xPosition: round(sf.DocusignXCoord),
+              yPosition: round(sf.DocusignYCoord),
+              pageNumber: sf.Page.toString(),
+            })),
+            initialHereTabs: filteredSignLocation.SignInitialsFields.map(
+              (sif) => ({
+                documentId: form.documentId,
+                xPosition: round(sif.DocusignXCoord),
+                yPosition: round(sif.DocusignYCoord),
+                pageNumber: sif.Page.toString(),
+              })
+            ),
+            dateSignedTabs: filteredSignLocation.SignDateFields.map((sdf) => ({
+              documentId: form.documentId,
+              xPosition: round(sdf.DocusignXCoord),
+              yPosition: round(sdf.DocusignYCoord),
+              pageNumber: sdf.Page.toString(),
+            })),
+            attachmentTabs: [],
+          },
+        });
+      } else {
+        currentSigner.tabs.signHereTabs.push(
+          ...filteredSignLocation.SignFields.map((sf) => ({
+            documentId: form.documentId,
+            xPosition: round(sf.DocusignXCoord),
+            yPosition: round(sf.DocusignYCoord),
+            pageNumber: sf.Page.toString(),
+          }))
+        );
+        currentSigner.tabs.initialHereTabs.push(
+          ...filteredSignLocation.SignInitialsFields.map((sif) => ({
+            documentId: form.documentId,
+            xPosition: round(sif.DocusignXCoord),
+            yPosition: round(sif.DocusignYCoord),
+            pageNumber: sif.Page.toString(),
+          }))
+        );
+        currentSigner.tabs.dateSignedTabs.push(
+          ...filteredSignLocation.SignDateFields.map((sdf) => ({
+            documentId: form.documentId,
+            xPosition: round(sdf.DocusignXCoord),
+            yPosition: round(sdf.DocusignYCoord),
+            pageNumber: sdf.Page.toString(),
+          }))
+        );
+      }
+    });
+  });
+
+  return signers;
+}
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as RequestPayload;
-    const {
-      emailSubject,
-      formDataPerDocument,
-      recipientDetails,
-      additionalDocuments = [],
-      status,
-    } = body;
 
-    if (!formDataPerDocument.length || !recipientDetails.length) {
-      return new Response('Missing form data or recipients', { status: 400 });
-    }
+    const { emailSubject, forms, status = "created" } = body;
+
+    const formsWIthDocumentId = forms.map((form, index) => ({
+      ...form,
+      documentId: `${index + 1}`,
+    }));
+
+    const uniqueFormIds = [...new Set(forms.map((form) => form.formId))];
 
     const quikToken = await getQuikToken();
 
-    const forms = formDataPerDocument.map((form) => ({
-      formId: STATIC_FORM_ID,
+    const formattedForms = formsWIthDocumentId.map((form) => ({
+      formId: form.formId,
       documentId: form.documentId,
-      formFields: form.formFields,
+      formFields: Object.entries(form.formFields).map(([key, value]) => ({
+        FieldName: key,
+        FieldValue: value,
+      })),
     }));
-
-    const pdfs = await generateBulkQuikPdf({ token: quikToken, forms });
-
-    const documents = pdfs
-      .map((pdf) => ({
-        documentBase64: pdf.pdf,
-        documentId: pdf.documentId,
-        documentName: pdf.fileName,
-      }))
-      .concat(
-        additionalDocuments.map((doc) => ({
-          documentId: doc.documentId,
-          documentBase64: doc.documentBase64,
-          documentName: doc.fileName, // remap here
-        })),
-      );
-
-    const signers = recipientDetails.map((recipient) => {
-      const tabsPerDocument = recipient.documents.map((doc) =>
-        transformToTabs(staticSignFields, doc.documentId, doc.roles || []),
-      );
-
-      const combinedTabs = tabsPerDocument.reduce(
-        (acc, curr) => ({
-          signHereTabs: [
-            ...(acc.signHereTabs || []),
-            ...(curr.signHereTabs || []),
-          ],
-          dateSignedTabs: [
-            ...(acc.dateSignedTabs || []),
-            ...(curr.dateSignedTabs || []),
-          ],
-          initialHereTabs: [
-            ...(acc.initialHereTabs || []),
-            ...(curr.initialHereTabs || []),
-          ],
-        }),
-        { signHereTabs: [], dateSignedTabs: [], initialHereTabs: [] },
-      );
-
-      return {
-        email: recipient.email,
-        name: recipient.name,
-        recipientId: recipient.recipientId,
-        tabs: {
-          ...combinedTabs,
-          attachmentTabs: recipient.attachments || [],
-        },
-      };
-    });
+    const [quikPdfs, quikSignLocations] = await Promise.all([
+      generateBulkQuikPdf({
+        token: quikToken,
+        forms: formattedForms,
+      }),
+      fetchBulkQuickPdfSignLocations(quikToken, uniqueFormIds),
+    ]);
 
     const docusignToken = await getDocusignToken();
     const { apiBaseUrl, accountId } = await getDocusignBaseUrl(docusignToken);
 
-    const envelope = await createDocusignEnvelope({
-      token: docusignToken,
-      documents,
-      docusignBaseUrl: apiBaseUrl,
-      accountId,
-      emailSubject,
-      signers,
-      status,
-    });
+    const signers = getSignersImproved(formsWIthDocumentId, quikSignLocations);
 
-    return Response.json(envelope);
+    const docusignEnvelope = await createDocusignEnvelope({
+      token: docusignToken,
+      accountId,
+      docusignBaseUrl: apiBaseUrl,
+      emailSubject,
+      status,
+      documents: quikPdfs.map((pdf) => ({
+        documentBase64: pdf.pdf,
+        documentId: pdf.documentId,
+        documentName: pdf.fileName,
+      })),
+      signers,
+    });
+    return Response.json(docusignEnvelope);
   } catch (err) {
     console.error(err);
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response("Internal Server Error", { status: 500 });
   }
 }
