@@ -18,12 +18,17 @@ x-api-key: <secret-key>
 
 ## 📮 Available Endpoints
 
-### 1. Create Envelope
+### 1. Create Envelope (Dynamic Forms)
 ```
 POST https://docusign-poc.vercel.app/api/docusign-demo
 ```
 
-### 2. Get Envelope Status
+### 2. Create Envelope (Static Form 71259)
+```
+POST https://docusign-poc.vercel.app/api/docusign-demo/form-71259
+```
+
+### 3. Get Envelope Status
 ```
 GET https://docusign-poc.vercel.app/api/docusign-envelopes/{envelopeId}/status
 ```
@@ -33,12 +38,228 @@ GET https://docusign-poc.vercel.app/api/docusign-envelopes/{envelopeId}/status
 ## 📝 Important Notes
 
 - **documentId** and **recipientId** should be unique and positive numbers (e.g. "1", "2", "3", "99")
-- PDF forms are generated from a static formId: `71259`
-- Signing roles map to exact x/y coordinates in the PDF
+- The dynamic forms endpoint supports multiple Quik forms with automatic sign location detection
+- The static form endpoint uses formId: `71259` with predefined signing locations
 
 ---
 
-## 📮 Create Envelope API
+## 📮 Create Envelope API (Dynamic Forms)
+
+This endpoint allows you to create DocuSign envelopes with multiple Quik forms, automatically detecting signing locations based on signer roles.
+
+### Request Body Format
+
+```json
+{
+  "emailSubject": "Please sign these documents",
+  "forms": [
+    {
+      "formId": "71259",
+      "signers": [
+        {
+          "email": "john@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "role": "primary"
+        },
+        {
+          "email": "jane@example.com",
+          "firstName": "Jane",
+          "lastName": "Smith",
+          "role": "secondary"
+        }
+      ],
+      "formFields": {
+        "1own.FName": "John",
+        "1own.LName": "Doe",
+        "2own.FName": "Jane",
+        "2own.LName": "Smith",
+        "1ent.EntityName": "Acme Inc."
+      }
+    }
+  ],
+  "status": "sent"
+}
+```
+
+### Response Format
+
+```json
+{
+  "envelopeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "sent"
+}
+```
+
+### Field Reference
+
+#### `forms`
+
+Array of forms to be included in the envelope. Each form object contains:
+
+| Property     | Type     | Description                                           |
+|-------------|----------|-------------------------------------------------------|
+| `formId`    | string   | Quik form ID (e.g., "71259", "71260")                |
+| `signers`   | array    | Array of signers for this specific form              |
+| `formFields`| object   | Key-value pairs of field names and values            |
+
+#### `signers`
+
+Each signer object contains:
+
+| Property    | Type   | Description                                    |
+|------------|--------|------------------------------------------------|
+| `email`     | string | Signer's email address                         |
+| `firstName` | string | Signer's first name                            |
+| `lastName`  | string | Signer's last name                             |
+| `role`      | string | Signer role: "primary" or "secondary"          |
+
+#### `formFields`
+
+Form fields are specific to each Quik form. Common fields include:
+- `1own.FName`, `1own.LName` - Primary owner name fields
+- `2own.FName`, `2own.LName` - Secondary owner name fields
+- `1ent.EntityName` - Business entity name
+
+#### `status`
+
+- `"created"` - Create envelope in draft status
+- `"sent"` - Create and immediately send envelope (default)
+
+### Sample Scenarios
+
+#### 1️⃣ Single Form with Multiple Signers
+
+```json
+{
+  "emailSubject": "Partnership Agreement",
+  "forms": [
+    {
+      "formId": "71259",
+      "signers": [
+        {
+          "email": "alice@example.com",
+          "firstName": "Alice",
+          "lastName": "Johnson",
+          "role": "primary"
+        },
+        {
+          "email": "bob@example.com",
+          "firstName": "Bob",
+          "lastName": "Williams",
+          "role": "secondary"
+        }
+      ],
+      "formFields": {
+        "1own.FName": "Alice",
+        "1own.LName": "Johnson",
+        "2own.FName": "Bob",
+        "2own.LName": "Williams",
+        "1ent.EntityName": "Johnson & Williams LLC"
+      }
+    }
+  ],
+  "status": "sent"
+}
+```
+
+#### 2️⃣ Multiple Forms with Different Signers
+
+```json
+{
+  "emailSubject": "Multiple Documents for Signing",
+  "forms": [
+    {
+      "formId": "71259",
+      "signers": [
+        {
+          "email": "john@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "role": "primary"
+        }
+      ],
+      "formFields": {
+        "1own.FName": "John",
+        "1own.LName": "Doe",
+        "1ent.EntityName": "Doe Enterprises"
+      }
+    },
+    {
+      "formId": "71260",
+      "signers": [
+        {
+          "email": "jane@example.com",
+          "firstName": "Jane",
+          "lastName": "Smith",
+          "role": "primary"
+        },
+        {
+          "email": "john@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "role": "secondary"
+        }
+      ],
+      "formFields": {
+        "1own.FName": "Jane",
+        "1own.LName": "Smith",
+        "2own.FName": "John",
+        "2own.LName": "Doe"
+      }
+    }
+  ],
+  "status": "sent"
+}
+```
+
+#### 3️⃣ Single Signer for Multiple Forms
+
+```json
+{
+  "emailSubject": "Complete Package for John Doe",
+  "forms": [
+    {
+      "formId": "71259",
+      "signers": [
+        {
+          "email": "john@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "role": "primary"
+        }
+      ],
+      "formFields": {
+        "1own.FName": "John",
+        "1own.LName": "Doe"
+      }
+    },
+    {
+      "formId": "71261",
+      "signers": [
+        {
+          "email": "john@example.com",
+          "firstName": "John",
+          "lastName": "Doe",
+          "role": "primary"
+        }
+      ],
+      "formFields": {
+        "1own.FName": "John",
+        "1own.LName": "Doe",
+        "1ent.EntityName": "Doe Corp"
+      }
+    }
+  ],
+  "status": "created"
+}
+```
+
+---
+
+## 📮 Create Envelope API (Static Form 71259)
+
+This endpoint uses the original implementation with a static Quik form (ID: 71259) and predefined signing locations.
 
 ### Request Body Format
 
@@ -274,7 +495,7 @@ All APIs return similar error formats:
 
 ## 🧪 How to Test Using Postman
 
-### Create Envelope
+### Create Envelope (Dynamic Forms)
 
 1. Open **Postman**
 2. Create a new request:
@@ -286,7 +507,22 @@ All APIs return similar error formats:
 4. Body:
    - Select: `raw`
    - Format: `JSON`
-   - Copy any of the sample scenarios above
+   - Copy any of the dynamic forms sample scenarios above
+5. Click **Send**
+
+### Create Envelope (Static Form 71259)
+
+1. Open **Postman**
+2. Create a new request:
+   - Method: `POST`
+   - URL: `https://docusign-poc.vercel.app/api/docusign-demo/form-71259`
+3. Add Headers:
+   - `Content-Type`: `application/json`
+   - `x-api-key`: `<secret-key>` (will be provided separately)
+4. Body:
+   - Select: `raw`
+   - Format: `JSON`
+   - Copy any of the static form sample scenarios above
 5. Click **Send**
 
 ### Get Envelope Status

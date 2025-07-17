@@ -11,7 +11,7 @@ import {
   fetchBulkQuickPdfSignLocations,
 } from "@/lib/api-services/quik/sign";
 
-type SignerRoles = "primary" | "secondary";
+type SignerRoles = "1own" | "2own";
 
 interface Form {
   formId: string;
@@ -74,7 +74,7 @@ function getSignersImproved(
 
   // Create a map for faster lookup of sign locations
   const signLocationMap = new Map(
-    quikSignLocations.map(loc => [loc.FormId, loc])
+    quikSignLocations.map(loc => [loc.FormId.toString(), loc])
   );
 
   formsWithDocumentId.forEach((form) => {
@@ -122,97 +122,97 @@ function getSignersImproved(
   return Array.from(signersMap.values());
 }
 
-function getSigners(
-  formsWIthDocumentId: (Form & { documentId: string })[],
-  quikSignLocations: BulkQuikSignLocationResponse[]
-) {
-  const signers: {
-    email: string;
-    name: string;
-    recipientId: string;
-    tabs: Tabs;
-  }[] = [];
+// function getSigners(
+//   formsWIthDocumentId: (Form & { documentId: string })[],
+//   quikSignLocations: BulkQuikSignLocationResponse[]
+// ) {
+//   const signers: {
+//     email: string;
+//     name: string;
+//     recipientId: string;
+//     tabs: Tabs;
+//   }[] = [];
 
-  formsWIthDocumentId.forEach((form) => {
-    const signLocation = quikSignLocations.find(
-      (s) => s.FormId === form.formId
-    );
-    form.signers.forEach((signer) => {
-      const filteredSignLocation = {
-        SignFields:
-          signLocation?.SignFields?.filter(
-            (sf) => sf.FieldRole === signer.role
-          ) || [],
-        SignDateFields:
-          signLocation?.SignDateFields?.filter(
-            (sdf) => sdf.FieldRole === signer.role
-          ) || [],
-        SignInitialsFields:
-          signLocation?.SignInitialsFields?.filter(
-            (sif) => sif.FieldRole === signer.role
-          ) || [],
-      };
-      const currentSigner = signers.find((s) => s.email === signer.email);
-      if (!currentSigner) {
-        signers.push({
-          email: signer.email,
-          name: `${signer.firstName} ${signer.lastName}`,
-          recipientId: (signers.length + 1).toString(),
-          tabs: {
-            signHereTabs: filteredSignLocation.SignFields.map((sf) => ({
-              documentId: form.documentId,
-              xPosition: round(sf.DocusignXCoord),
-              yPosition: round(sf.DocusignYCoord),
-              pageNumber: sf.Page.toString(),
-            })),
-            initialHereTabs: filteredSignLocation.SignInitialsFields.map(
-              (sif) => ({
-                documentId: form.documentId,
-                xPosition: round(sif.DocusignXCoord),
-                yPosition: round(sif.DocusignYCoord),
-                pageNumber: sif.Page.toString(),
-              })
-            ),
-            dateSignedTabs: filteredSignLocation.SignDateFields.map((sdf) => ({
-              documentId: form.documentId,
-              xPosition: round(sdf.DocusignXCoord),
-              yPosition: round(sdf.DocusignYCoord),
-              pageNumber: sdf.Page.toString(),
-            })),
-            attachmentTabs: [],
-          },
-        });
-      } else {
-        currentSigner.tabs.signHereTabs.push(
-          ...filteredSignLocation.SignFields.map((sf) => ({
-            documentId: form.documentId,
-            xPosition: round(sf.DocusignXCoord),
-            yPosition: round(sf.DocusignYCoord),
-            pageNumber: sf.Page.toString(),
-          }))
-        );
-        currentSigner.tabs.initialHereTabs.push(
-          ...filteredSignLocation.SignInitialsFields.map((sif) => ({
-            documentId: form.documentId,
-            xPosition: round(sif.DocusignXCoord),
-            yPosition: round(sif.DocusignYCoord),
-            pageNumber: sif.Page.toString(),
-          }))
-        );
-        currentSigner.tabs.dateSignedTabs.push(
-          ...filteredSignLocation.SignDateFields.map((sdf) => ({
-            documentId: form.documentId,
-            xPosition: round(sdf.DocusignXCoord),
-            yPosition: round(sdf.DocusignYCoord),
-            pageNumber: sdf.Page.toString(),
-          }))
-        );
-      }
-    });
-  });
+//   formsWIthDocumentId.forEach((form) => {
+//     const signLocation = quikSignLocations.find(
+//       (s) => s.FormId.toString() === form.formId
+//     );
+//     form.signers.forEach((signer) => {
+//       const filteredSignLocation = {
+//         SignFields:
+//           signLocation?.SignFields?.filter(
+//             (sf) => sf.FieldRole === signer.role
+//           ) || [],
+//         SignDateFields:
+//           signLocation?.SignDateFields?.filter(
+//             (sdf) => sdf.FieldRole === signer.role
+//           ) || [],
+//         SignInitialsFields:
+//           signLocation?.SignInitialsFields?.filter(
+//             (sif) => sif.FieldRole === signer.role
+//           ) || [],
+//       };
+//       const currentSigner = signers.find((s) => s.email === signer.email);
+//       if (!currentSigner) {
+//         signers.push({
+//           email: signer.email,
+//           name: `${signer.firstName} ${signer.lastName}`,
+//           recipientId: (signers.length + 1).toString(),
+//           tabs: {
+//             signHereTabs: filteredSignLocation.SignFields.map((sf) => ({
+//               documentId: form.documentId,
+//               xPosition: round(sf.DocusignXCoord),
+//               yPosition: round(sf.DocusignYCoord),
+//               pageNumber: sf.Page.toString(),
+//             })),
+//             initialHereTabs: filteredSignLocation.SignInitialsFields.map(
+//               (sif) => ({
+//                 documentId: form.documentId,
+//                 xPosition: round(sif.DocusignXCoord),
+//                 yPosition: round(sif.DocusignYCoord),
+//                 pageNumber: sif.Page.toString(),
+//               })
+//             ),
+//             dateSignedTabs: filteredSignLocation.SignDateFields.map((sdf) => ({
+//               documentId: form.documentId,
+//               xPosition: round(sdf.DocusignXCoord),
+//               yPosition: round(sdf.DocusignYCoord),
+//               pageNumber: sdf.Page.toString(),
+//             })),
+//             attachmentTabs: [],
+//           },
+//         });
+//       } else {
+//         currentSigner.tabs.signHereTabs.push(
+//           ...filteredSignLocation.SignFields.map((sf) => ({
+//             documentId: form.documentId,
+//             xPosition: round(sf.DocusignXCoord),
+//             yPosition: round(sf.DocusignYCoord),
+//             pageNumber: sf.Page.toString(),
+//           }))
+//         );
+//         currentSigner.tabs.initialHereTabs.push(
+//           ...filteredSignLocation.SignInitialsFields.map((sif) => ({
+//             documentId: form.documentId,
+//             xPosition: round(sif.DocusignXCoord),
+//             yPosition: round(sif.DocusignYCoord),
+//             pageNumber: sif.Page.toString(),
+//           }))
+//         );
+//         currentSigner.tabs.dateSignedTabs.push(
+//           ...filteredSignLocation.SignDateFields.map((sdf) => ({
+//             documentId: form.documentId,
+//             xPosition: round(sdf.DocusignXCoord),
+//             yPosition: round(sdf.DocusignYCoord),
+//             pageNumber: sdf.Page.toString(),
+//           }))
+//         );
+//       }
+//     });
+//   });
 
-  return signers;
-}
+//   return signers;
+// }
 
 export async function POST(request: Request) {
   try {
