@@ -33,6 +33,11 @@ POST https://docusign-poc.vercel.app/api/docusign-demo/form-71259
 GET https://docusign-poc.vercel.app/api/docusign-envelopes/{envelopeId}/status
 ```
 
+### 4. Get Signers Status (Per Document)
+```
+GET https://docusign-poc.vercel.app/api/docusign-envelopes/{envelopeId}/signers-status
+```
+
 ---
 
 ## 📝 Important Notes
@@ -467,6 +472,100 @@ Defines each signer.
 | completed   | All recipients have completed their actions      |
 | declined    | One or more recipients declined to sign          |
 | voided      | Envelope has been voided                         |
+
+---
+
+## 📊 Get Signers Status API
+
+This endpoint provides detailed signing status for each signer and their documents within an envelope.
+
+### Request Parameters
+
+| Parameter    | Type   | Location | Description                    |
+|-------------|--------|----------|--------------------------------|
+| envelopeId  | string | Path     | The DocuSign envelope ID       |
+
+### Response Format
+
+```json
+{
+  "envelopeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "sent",
+  "signers": [
+    {
+      "email": "john@example.com",
+      "name": "John McClane",
+      "signedCount": 2,
+      "totalDocuments": 4,
+      "documents": [
+        {
+          "documentId": "1",
+          "documentName": "Add or Remove an Advisor on Your Existing Fidel...",
+          "status": "signed",
+          "signedDateTime": "2024-03-15T10:30:00Z"
+        },
+        {
+          "documentId": "2",
+          "documentName": "Transfer of Assets",
+          "status": "not_signed"
+        },
+        {
+          "documentId": "3",
+          "documentName": "Add or Remove an Advisor on Your Existing Fidel...",
+          "status": "signed",
+          "signedDateTime": "2024-03-15T10:32:00Z"
+        },
+        {
+          "documentId": "4",
+          "documentName": "Mercer Fidelity Agreement",
+          "status": "not_signed"
+        }
+      ]
+    },
+    {
+      "email": "david@example.com",
+      "name": "David Dunn",
+      "signedCount": 2,
+      "totalDocuments": 4,
+      "documents": [
+        {
+          "documentId": "1",
+          "documentName": "Add or Remove an Advisor on Your Existing Fidel...",
+          "status": "signed",
+          "signedDateTime": "2024-03-15T11:00:00Z"
+        },
+        {
+          "documentId": "2",
+          "documentName": "Transfer of Assets",
+          "status": "not_signed"
+        },
+        {
+          "documentId": "3",
+          "documentName": "Add or Remove an Advisor on Your Existing Fidel...",
+          "status": "signed",
+          "signedDateTime": "2024-03-15T11:02:00Z"
+        },
+        {
+          "documentId": "4",
+          "documentName": "Mercer Fidelity Agreement",
+          "status": "not_signed"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Response Fields
+
+| Field | Description |
+|-------|-------------|
+| `signers[].signedCount` | Number of documents signed by this signer |
+| `signers[].totalDocuments` | Total number of documents assigned to this signer |
+| `signers[].documents[].status` | Either "signed" or "not_signed" |
+| `signers[].documents[].signedDateTime` | ISO timestamp when document was signed (only present if signed) |
+
+This API is designed to power accordion-style UIs showing signing progress per recipient.
 
 ---
 

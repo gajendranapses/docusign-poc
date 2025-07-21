@@ -9,6 +9,27 @@ export function middleware(request: NextRequest) {
 
   // Check if the request is for the API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
+    // Skip auth for requests from the same Next.js app
+    // These requests typically come from client-side components or server components
+    const host = request.headers.get('host');
+    const referer = request.headers.get('referer');
+    const origin = request.headers.get('origin');
+    
+    // Check if request is from the same origin
+    const isInternalRequest = (
+      (referer && referer.includes(host || '')) ||
+      (origin && origin.includes(host || '')) ||
+      // Next.js internal requests often have these headers
+      request.headers.get('x-nextjs-data') !== null ||
+      request.headers.get('next-router-prefetch') !== null ||
+      request.headers.get('next-router-state-tree') !== null
+    );
+
+    if (isInternalRequest) {
+      return NextResponse.next();
+    }
+
+    // For external requests, check API key
     const authHeader = request.headers.get('x-api-key');
     const apiKey = process.env.API_SECRET_KEY;
 
