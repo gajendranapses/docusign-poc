@@ -60,13 +60,13 @@ This endpoint allows you to create DocuSign envelopes with multiple Quik forms, 
           "email": "john@example.com",
           "firstName": "John",
           "lastName": "Doe",
-          "role": "primary"
+          "role": "1own"
         },
         {
           "email": "jane@example.com",
           "firstName": "Jane",
           "lastName": "Smith",
-          "role": "secondary"
+          "role": "2own"
         }
       ],
       "formFields": {
@@ -112,7 +112,7 @@ Each signer object contains:
 | `email`     | string | Signer's email address                         |
 | `firstName` | string | Signer's first name                            |
 | `lastName`  | string | Signer's last name                             |
-| `role`      | string | Signer role: "primary" or "secondary"          |
+| `role`      | string | Signer role matching Quik field roles (e.g., "1own", "2own", "3own", "4own", "1authind") |
 
 #### `formFields`
 
@@ -141,13 +141,13 @@ Form fields are specific to each Quik form. Common fields include:
           "email": "alice@example.com",
           "firstName": "Alice",
           "lastName": "Johnson",
-          "role": "primary"
+          "role": "1own"
         },
         {
           "email": "bob@example.com",
           "firstName": "Bob",
           "lastName": "Williams",
-          "role": "secondary"
+          "role": "2own"
         }
       ],
       "formFields": {
@@ -176,7 +176,7 @@ Form fields are specific to each Quik form. Common fields include:
           "email": "john@example.com",
           "firstName": "John",
           "lastName": "Doe",
-          "role": "primary"
+          "role": "1own"
         }
       ],
       "formFields": {
@@ -192,13 +192,13 @@ Form fields are specific to each Quik form. Common fields include:
           "email": "jane@example.com",
           "firstName": "Jane",
           "lastName": "Smith",
-          "role": "primary"
+          "role": "1own"
         },
         {
           "email": "john@example.com",
           "firstName": "John",
           "lastName": "Doe",
-          "role": "secondary"
+          "role": "2own"
         }
       ],
       "formFields": {
@@ -226,7 +226,7 @@ Form fields are specific to each Quik form. Common fields include:
           "email": "john@example.com",
           "firstName": "John",
           "lastName": "Doe",
-          "role": "primary"
+          "role": "1own"
         }
       ],
       "formFields": {
@@ -241,7 +241,7 @@ Form fields are specific to each Quik form. Common fields include:
           "email": "john@example.com",
           "firstName": "John",
           "lastName": "Doe",
-          "role": "primary"
+          "role": "1own"
         }
       ],
       "formFields": {
