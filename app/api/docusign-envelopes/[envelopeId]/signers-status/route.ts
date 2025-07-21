@@ -31,10 +31,10 @@ interface EnvelopeSignersStatusResponse {
 
 export async function GET(
   request: Request,
-  { params }: { params: { envelopeId: string } }
+  { params }: { params: Promise<{ envelopeId: string }> }
 ) {
   try {
-    const { envelopeId } = params;
+    const { envelopeId } = await params;
 
     // Get DocuSign token and base URL
     const docusignToken = await getDocusignToken();

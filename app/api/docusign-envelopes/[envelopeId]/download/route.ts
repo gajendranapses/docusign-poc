@@ -3,10 +3,10 @@ import { getDocusignBaseUrl } from "@/lib/api-services/docusign/base";
 
 export async function GET(
   request: Request,
-  { params }: { params: { envelopeId: string } }
+  { params }: { params: Promise<{ envelopeId: string }> }
 ) {
   try {
-    const { envelopeId } = params;
+    const { envelopeId } = await params;
     
     // Get type parameter from query string (combined or individual documents)
     const url = new URL(request.url);
