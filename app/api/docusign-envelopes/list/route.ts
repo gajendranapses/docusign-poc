@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           accounts: userAccounts.map(acc => ({
             accountId: acc.account_id,
             email: acc.email,
-            isDefault: acc.is_default === 1
+            isDefault: acc.is_default
           }))
         }, { status: 400 });
       }
@@ -89,15 +89,15 @@ export async function GET(request: NextRequest) {
       currentAccount: {
         accountId: docusignAccount.account_id,
         email: docusignAccount.email,
-        isDefault: docusignAccount.is_default === 1
+        isDefault: docusignAccount.is_default
       },
       availableAccounts: allAccounts.map(acc => ({
         accountId: acc.account_id,
         email: acc.email,
-        isDefault: acc.is_default === 1
+        isDefault: acc.is_default
       }))
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching envelopes:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
