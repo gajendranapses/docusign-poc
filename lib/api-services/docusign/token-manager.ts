@@ -39,7 +39,7 @@ async function refreshAccessToken(account: DocuSignAccount): Promise<DocuSignAcc
     const tokens = await response.json();
 
     // Update tokens in database
-    const success = accountDb.updateTokens(
+    const success = await accountDb.updateTokens(
       account.account_id,
       tokens.access_token,
       tokens.refresh_token || account.refresh_token, // Sometimes refresh token doesn't change
@@ -52,7 +52,7 @@ async function refreshAccessToken(account: DocuSignAccount): Promise<DocuSignAcc
     }
 
     // Return updated account
-    return accountDb.getByAccountId(account.account_id);
+    return await accountDb.getByAccountId(account.account_id);
   } catch (error) {
     console.error('Error refreshing token:', error);
     return null;
@@ -63,7 +63,7 @@ async function refreshAccessToken(account: DocuSignAccount): Promise<DocuSignAcc
  * Gets a valid access token for the account, refreshing if necessary
  */
 export async function getValidAccessToken(accountId: string): Promise<string | null> {
-  const account = accountDb.getByAccountId(accountId);
+  const account = await accountDb.getByAccountId(accountId);
   
   if (!account) {
     console.error('Account not found:', accountId);
@@ -92,7 +92,7 @@ export async function getValidAccessToken(accountId: string): Promise<string | n
  * Gets the default account's valid access token
  */
 export async function getDefaultAccountToken(userId: string = 'default'): Promise<string | null> {
-  const account = accountDb.getDefault(userId);
+  const account = await accountDb.getDefault(userId);
   
   if (!account) {
     console.error('No default account found');

@@ -25,14 +25,14 @@ export async function GET(request: NextRequest) {
     // Get the appropriate DocuSign account
     let docusignAccount;
     if (requestedAccountId) {
-      docusignAccount = getAccountByAccountId(requestedAccountId, user.id);
+      docusignAccount = await getAccountByAccountId(requestedAccountId, user.id);
     } else {
-      docusignAccount = getDefaultAccount(user.id);
+      docusignAccount = await getDefaultAccount(user.id);
     }
 
     if (!docusignAccount) {
       // Check if user has any accounts at all
-      const userAccounts = getAllAccountsByUser(user.id);
+      const userAccounts = await getAllAccountsByUser(user.id);
       if (userAccounts.length === 0) {
         return Response.json({ 
           error: 'No DocuSign accounts connected',
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     
     // Get all accounts for the dropdown
-    const allAccounts = getAllAccountsByUser(user.id);
+    const allAccounts = await getAllAccountsByUser(user.id);
     
     return Response.json({
       envelopes: data.envelopes || [],

@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Store the account and tokens in database
-    accountDb.upsert({
+    await accountDb.upsert({
       user_id: userId,
       email: userInfo.email,
       name: userInfo.name,

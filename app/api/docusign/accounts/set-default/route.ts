@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Set the default account
-    const success = accountDb.setDefault(accountId, user.id);
+    const success = await accountDb.setDefault(accountId, user.id);
 
     if (!success) {
       return Response.json({ error: 'Account not found or access denied' }, { status: 404 });

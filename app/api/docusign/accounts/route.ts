@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       userId = user.id;
     }
     
-    const accounts = accountDb.getAll(userId);
+    const accounts = await accountDb.getAll(userId);
     
     // Don't send tokens to frontend
     const safeAccounts = accounts.map(({ access_token, refresh_token, ...account }) => ({
@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
     }
     
-    const success = accountDb.delete(accountId, userId);
+    const success = await accountDb.delete(accountId, userId);
     
     if (!success) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });

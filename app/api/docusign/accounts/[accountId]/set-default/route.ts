@@ -24,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
     
-    const success = accountDb.setDefault(accountId, user.id);
+    const success = await accountDb.setDefault(accountId, user.id);
     
     if (!success) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
