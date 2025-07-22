@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server';
 import { getDocusignToken } from "@/lib/api-services/docusign/auth";
 import { getDocusignBaseUrl } from "@/lib/api-services/docusign/base";
 
@@ -30,7 +31,7 @@ interface EnvelopeSignersStatusResponse {
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ envelopeId: string }> }
 ) {
   try {

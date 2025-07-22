@@ -1,3 +1,4 @@
+import { NextRequest } from 'next/server';
 import { getDocusignToken } from '@/lib/api-services/docusign/auth';
 import { getDocusignBaseUrl } from '@/lib/api-services/docusign/base';
 import { createDocusignEnvelope } from '@/lib/api-services/docusign/envelope';
@@ -84,7 +85,7 @@ function validate(forms: Form[], recipientDetails: RecipientDetail[]) {
     error: null,
   };
 }
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 

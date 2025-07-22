@@ -1,8 +1,9 @@
+import { NextRequest } from 'next/server';
 import { getDocusignToken } from "@/lib/api-services/docusign/auth";
 import { getDocusignBaseUrl } from "@/lib/api-services/docusign/base";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ envelopeId: string }> }
 ) {
   try {

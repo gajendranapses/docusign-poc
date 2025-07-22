@@ -1,8 +1,9 @@
+import { NextRequest } from 'next/server';
 import { getDocusignToken } from '@/lib/api-services/docusign/auth';
 import { getDocusignBaseUrl } from '@/lib/api-services/docusign/base';
 import { getEnvelopeStatus } from '@/lib/api-services/docusign/envelope';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const envelopeId = searchParams.get('envelopeId');

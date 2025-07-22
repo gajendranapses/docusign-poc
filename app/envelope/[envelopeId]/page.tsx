@@ -83,6 +83,7 @@ export default function EnvelopePage() {
     }
   }, [envelopeId]);
 
+
   const fetchEnvelopeData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -149,12 +150,15 @@ export default function EnvelopePage() {
     }
   };
 
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading envelope data...</p>
+          <p className="mt-4 text-gray-600">
+            Loading envelope data...
+          </p>
         </div>
       </div>
     );
@@ -180,40 +184,40 @@ export default function EnvelopePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="py-8">
       <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Main Envelope</h1>
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <span className="flex items-center">
-                  📥 {envelopeData.status.charAt(0).toUpperCase() + envelopeData.status.slice(1)}
-                </span>
-                <span>📋 {envelopeData.envelopeId.substring(0, 12)}...</span>
+          {/* Header */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Envelope Details</h1>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span className="flex items-center">
+                    📥 {envelopeData.status.charAt(0).toUpperCase() + envelopeData.status.slice(1)}
+                  </span>
+                  <span>📋 {envelopeData.envelopeId.substring(0, 12)}...</span>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                >
+                  <span>📥</span>
+                  <span>{downloading ? 'Downloading...' : 'Download'}</span>
+                </button>
+                <button 
+                  onClick={() => fetchEnvelopeData(true)}
+                  disabled={loading || refreshing}
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                >
+                  <span className={refreshing ? 'animate-spin' : ''}>🔄</span>
+                  <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
               </div>
             </div>
-            <div className="flex space-x-2">
-              <button 
-                onClick={handleDownload}
-                disabled={downloading}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-              >
-                <span>📥</span>
-                <span>{downloading ? 'Downloading...' : 'Download'}</span>
-              </button>
-              <button 
-                onClick={() => fetchEnvelopeData(true)}
-                disabled={loading || refreshing}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-              >
-                <span className={refreshing ? 'animate-spin' : ''}>🔄</span>
-                <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-              </button>
-            </div>
           </div>
-        </div>
 
         {/* Timeline */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
