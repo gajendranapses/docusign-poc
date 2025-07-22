@@ -52,7 +52,7 @@ async function refreshAccessToken(account: DocuSignAccount): Promise<DocuSignAcc
     }
 
     // Return updated account
-    return accountDb.getById(account.account_id);
+    return accountDb.getByAccountId(account.account_id);
   } catch (error) {
     console.error('Error refreshing token:', error);
     return null;
@@ -63,7 +63,7 @@ async function refreshAccessToken(account: DocuSignAccount): Promise<DocuSignAcc
  * Gets a valid access token for the account, refreshing if necessary
  */
 export async function getValidAccessToken(accountId: string): Promise<string | null> {
-  const account = accountDb.getById(accountId);
+  const account = accountDb.getByAccountId(accountId);
   
   if (!account) {
     console.error('Account not found:', accountId);

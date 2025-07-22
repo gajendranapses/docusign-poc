@@ -48,12 +48,21 @@ export async function DELETE(request: NextRequest) {
     const apiKey = request.headers.get('x-api-key');
     const validApiKey = process.env.API_SECRET_KEY;
     
-    if (!(apiKey && apiKey === validApiKey)) {
-      // Web app request - check for auth cookie
+    let userId = 'default';
+    
+    if (apiKey && apiKey === validApiKey) {
+      // API key request - use default user or allow specifying userId in query params
+      const queryUserId = request.nextUrl.searchParams.get('userId');
+      userId = queryUserId || 'default';
+    } else {
+      // Web app request - get user from auth cookie
       const authCookie = request.cookies.get('docusign-poc-auth');
       if (!authCookie) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      
+      const user = JSON.parse(authCookie.value);
+      userId = user.id;
     }
     
     const { accountId } = await request.json();
@@ -62,7 +71,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
     }
     
-    const success = accountDb.delete(accountId);
+    const success = accountDb.delete(accountId, userId);
     
     if (!success) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });

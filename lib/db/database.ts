@@ -311,6 +311,25 @@ export const accountDb = {
     `);
     const result = stmt.run(accessToken, refreshToken, expiresAt, Math.floor(Date.now() / 1000), accountId);
     return result.changes > 0;
+  },
+
+  // Get DocuSign account details by account_id only (for token refresh scenarios)
+  getByAccountId: (accountId: string): DocuSignAccount | null => {
+    const stmt = db.prepare(`
+      SELECT * FROM docusign_accounts WHERE account_id = ?
+    `);
+    const account = stmt.get(accountId) as any;
+    if (!account) return null;
+    return {
+      id: account.id,
+      account_id: account.account_id,
+      account_name: account.account_name,
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
+      expires_at: account.expires_at,
+      created_at: account.created_at,
+      updated_at: account.updated_at
+    };
   }
 };
 
