@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getDocusignToken } from "@/lib/api-services/docusign/auth";
 import { getDocusignBaseUrl } from "@/lib/api-services/docusign/base";
+import { getAccountByAccountId, getDefaultAccount } from '@/lib/db/database';
 
 interface SignerDocument {
   documentId: string;
@@ -30,6 +32,58 @@ interface EnvelopeSignersStatusResponse {
   signers: SignerStatus[];
 }
 
+// Utility function to get DocuSign token and account info conditionally
+async function getDocuSignCredentials(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const requestedAccountId = searchParams.get('accountId');
+  
+  // Try to get user from cookie for dynamic account selection
+  try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('docusign-poc-auth');
+    
+    if (authCookie && requestedAccountId) {
+      const user = JSON.parse(authCookie.value);
+      
+      // Try to get specific account for the user
+      const userAccount = await getAccountByAccountId(requestedAccountId, user.id);
+      if (userAccount) {
+        return {
+          token: userAccount.access_token,
+          accountId: userAccount.account_id,
+          apiBaseUrl: 'https://demo.docusign.net/restapi/v2.1'
+        };
+      }
+    }
+    
+    if (authCookie) {
+      const user = JSON.parse(authCookie.value);
+      
+      // Try to get default account for the user
+      const defaultAccount = await getDefaultAccount(user.id);
+      if (defaultAccount) {
+        return {
+          token: defaultAccount.access_token,
+          accountId: defaultAccount.account_id,
+          apiBaseUrl: 'https://demo.docusign.net/restapi/v2.1'
+        };
+      }
+    }
+  } catch (error) {
+    console.log('Failed to get user account, falling back to hardcoded token:', error);
+  }
+  
+  // Fallback to hardcoded token
+  const docusignToken = await getDocusignToken();
+  const { apiBaseUrl, accountId } = await getDocusignBaseUrl(docusignToken);
+  
+  return {
+    token: docusignToken,
+    accountId,
+    apiBaseUrl
+  };
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ envelopeId: string }> }
@@ -37,32 +91,30 @@ export async function GET(
   try {
     const { envelopeId } = await params;
 
-    // Get DocuSign token and base URL
-    const docusignToken = await getDocusignToken();
-    const { apiBaseUrl, accountId } = await getDocusignBaseUrl(docusignToken);
+    // Get DocuSign credentials (dynamic account or fallback to hardcoded)
+    const { token, accountId, apiBaseUrl } = await getDocuSignCredentials(request);
 
     // Fetch envelope details including recipients and documents
     const [envelopeResponse, recipientsResponse, documentsResponse] = await Promise.all([
       fetch(`${apiBaseUrl}/accounts/${accountId}/envelopes/${envelopeId}`, {
         headers: {
-          Authorization: `Bearer ${docusignToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }),
       fetch(`${apiBaseUrl}/accounts/${accountId}/envelopes/${envelopeId}/recipients?include_tabs=true`, {
         headers: {
-          Authorization: `Bearer ${docusignToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }),
       fetch(`${apiBaseUrl}/accounts/${accountId}/envelopes/${envelopeId}/documents`, {
         headers: {
-          Authorization: `Bearer ${docusignToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }),
     ]);
-
     if (!envelopeResponse.ok || !recipientsResponse.ok || !documentsResponse.ok) {
       throw new Error("Failed to fetch envelope details from DocuSign");
     }

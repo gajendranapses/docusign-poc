@@ -384,17 +384,104 @@ export const accountDb = {
   }
 };
 
-// Helper functions for API endpoints (now async)
+// Token refresh utility function
+async function refreshTokenIfNeeded(account: UserAccountWithDetails): Promise<UserAccountWithDetails> {
+  const now = Math.floor(Date.now() / 1000);
+  const buffer = 300; // 5 minutes buffer before expiry
+  
+  // Check if token is expired or will expire soon
+  if (account.expires_at <= now + buffer) {
+    console.log(`Token for account ${account.account_id} is expired or expiring soon, refreshing...`);
+    
+    try {
+      // Refresh the token using DocuSign API
+      const response = await fetch('https://account-d.docusign.com/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${process.env.DOCUSIGN_INTEGRATION_KEY}:${process.env.DOCUSIGN_INTEGRATION_SECRET}`).toString('base64')}`
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: account.refresh_token
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to refresh token:', response.status, await response.text());
+        return account; // Return original account if refresh fails
+      }
+
+      const tokens = await response.json();
+      
+      // Update tokens in database
+      const success = await accountDb.updateTokens(
+        account.account_id,
+        tokens.access_token,
+        tokens.refresh_token || account.refresh_token,
+        tokens.expires_in
+      );
+
+      if (success) {
+        // Return updated account with new tokens
+        const updatedAccount = await accountDb.getById(account.account_id, account.user_id);
+        if (updatedAccount) {
+          console.log(`Token refreshed successfully for account ${account.account_id}`);
+          return updatedAccount;
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+    }
+  }
+  
+  return account; // Return original account if no refresh needed or refresh failed
+}
+
+// Helper functions for API endpoints with automatic token refresh
 export const getAllAccountsByUser = async (userId: string): Promise<UserAccountWithDetails[]> => {
-  return accountDb.getAll(userId);
+  const accounts = await accountDb.getAll(userId);
+  
+  // Refresh tokens for all accounts if needed
+  const refreshedAccounts = await Promise.all(
+    accounts.map(account => refreshTokenIfNeeded(account))
+  );
+  
+  return refreshedAccounts;
 };
 
 export const getAccountByAccountId = async (accountId: string, userId: string): Promise<UserAccountWithDetails | null> => {
-  return accountDb.getById(accountId, userId);
+  const account = await accountDb.getById(accountId, userId);
+  if (!account) return null;
+  
+  // Refresh token if needed
+  return await refreshTokenIfNeeded(account);
 };
 
 export const getDefaultAccount = async (userId: string): Promise<UserAccountWithDetails | null> => {
-  return accountDb.getDefault(userId);
+  let account = await accountDb.getDefault(userId);
+  
+  // If no default account but user has accounts, make the first one default
+  if (!account) {
+    const userAccounts = await accountDb.getAll(userId);
+    if (userAccounts.length > 0) {
+      console.log(`No default account found for user ${userId}, setting first account as default: ${userAccounts[0].account_id}`);
+      
+      // Set the first account as default
+      const success = await accountDb.setDefault(userAccounts[0].account_id, userId);
+      if (success) {
+        account = await accountDb.getDefault(userId);
+      } else {
+        // Fallback to first account even if setting default failed
+        account = userAccounts[0];
+      }
+    }
+  }
+  
+  if (!account) return null;
+  
+  // Refresh token if needed
+  return await refreshTokenIfNeeded(account);
 };
 
 export { client as db };

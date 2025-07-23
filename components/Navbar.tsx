@@ -122,7 +122,7 @@ export default function Navbar() {
 
   if (!user) {
     return (
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo/Brand */}
@@ -133,15 +133,15 @@ export default function Navbar() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <span className="text-xl font-semibold text-gray-900">DocuSign POC</span>
+                <span className="text-xl font-semibold text-gray-900 dark:text-white">DocuSign POC</span>
               </Link>
             </div>
 
             {/* Loading User Menu */}
             <div className="flex items-center space-x-4">
-              <div className="animate-pulse bg-gray-200 h-4 w-20 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-8 w-8 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+              <div className="animate-pulse bg-gray-200 dark:bg-gray-600 h-4 w-20 rounded"></div>
+              <div className="animate-pulse bg-gray-200 dark:bg-gray-600 h-8 w-8 rounded"></div>
+              <div className="animate-pulse bg-gray-200 dark:bg-gray-600 h-8 w-16 rounded"></div>
             </div>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo/Brand */}
@@ -162,19 +162,19 @@ export default function Navbar() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <span className="text-xl font-semibold text-gray-900">DocuSign POC</span>
+                <span className="text-xl font-semibold text-gray-900 dark:text-white">DocuSign POC</span>
               </Link>
             </div>
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-700 dark:text-gray-300">
                 Welcome, <span className="font-medium">{user.name}</span>
               </span>
               
               <button
                 onClick={handleSettingsOpen}
-                className="p-2 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                 title="Settings"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -185,7 +185,7 @@ export default function Navbar() {
 
               <button
                 onClick={handleLogout}
-                className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded-md hover:bg-red-50"
+                className="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border border-red-300 dark:border-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 Logout
               </button>
@@ -197,14 +197,14 @@ export default function Navbar() {
       {/* Settings Drawer */}
       {showSettings && (
         <div className="fixed inset-0 z-50 overflow-hidden">
-          <div className="absolute inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowSettings(false)}></div>
+          <div className="absolute inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75" onClick={() => setShowSettings(false)}></div>
           
-          <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-xl">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-semibold">Settings</h2>
+          <div className="absolute right-0 top-0 h-full w-96 bg-white dark:bg-gray-800 shadow-xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Settings</h2>
               <button
                 onClick={() => setShowSettings(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -214,17 +214,17 @@ export default function Navbar() {
 
             <div className="p-6">
               {/* User Info */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-medium text-gray-900 mb-1">User Information</h3>
-                <p className="text-sm text-gray-600">Name: {user.name}</p>
-                <p className="text-sm text-gray-600">Email: {user.email}</p>
-                <p className="text-sm text-gray-600">ID: {user.id}</p>
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <h3 className="font-medium text-gray-900 dark:text-white mb-1">User Information</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Name: {user.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Email: {user.email}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">ID: {user.id}</p>
               </div>
 
               {/* DocuSign Accounts */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium text-gray-900">DocuSign Accounts</h3>
+                  <h3 className="font-medium text-gray-900 dark:text-white">DocuSign Accounts</h3>
                   <button
                     onClick={handleConnectAccount}
                     className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -238,25 +238,25 @@ export default function Navbar() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                   </div>
                 ) : docusignAccounts.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                     <p className="text-sm">No DocuSign accounts connected</p>
-                    <p className="text-xs text-gray-400 mt-1">Click "Add Account" to get started</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Click "Add Account" to get started</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {docusignAccounts.map((account) => (
-                      <div key={account.account_id} className="border rounded-lg p-4">
+                      <div key={account.account_id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <h4 className="font-medium text-gray-900">{account.account_name}</h4>
-                            <p className="text-sm text-gray-600">{account.email}</p>
-                            <p className="text-xs text-gray-500">ID: {account.account_id}</p>
+                            <h4 className="font-medium text-gray-900 dark:text-white">{account.account_name}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{account.email}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">ID: {account.account_id}</p>
                           </div>
                           {account.is_default && (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
                               Default
                             </span>
                           )}
@@ -266,14 +266,14 @@ export default function Navbar() {
                           {!account.is_default && (
                             <button
                               onClick={() => handleSetDefaultAccount(account.account_id)}
-                              className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                              className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-500"
                             >
                               Set Default
                             </button>
                           )}
                           <button
                             onClick={() => handleDeleteAccount(account.account_id)}
-                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
                           >
                             Remove
                           </button>
