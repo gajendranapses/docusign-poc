@@ -38,7 +38,7 @@ export const generateQuikPdf = async ({
   }
   return {
     pdf: data.ResultData.PDF as string,
-    fileName: data.ResultData.FileName as string,
+    fileName: (data.ResultData.FormShortName+"-"+documentId) as string,
     documentId,
   };
 };
