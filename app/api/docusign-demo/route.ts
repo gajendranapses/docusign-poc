@@ -48,7 +48,7 @@ interface AdditionalPDF {
 
 interface RequestPayload {
   emailSubject: string;
-  forms: Form[];
+  forms?: Form[];
   status?: "created" | "sent";
   additionalPDFs?: AdditionalPDF[];
 }
@@ -206,7 +206,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RequestPayload;
 
-    const { emailSubject, forms, status = "created", additionalPDFs = [] } = body;
+    const { emailSubject, forms = [], status = "created", additionalPDFs = [] } = body;
+
+    // Validate that at least one document source is provided
+    if (forms.length === 0 && additionalPDFs.length === 0) {
+      return new Response("At least one form or additional PDF is required", { status: 400 });
+    }
 
     // Assign document IDs: additional PDFs first, then Quik forms
     const additionalPDFsWithDocumentId = additionalPDFs.map((pdf, index) => ({
@@ -219,25 +224,31 @@ export async function POST(request: NextRequest) {
       documentId: `${additionalPDFs.length + index + 1}`,
     }));
 
-    const uniqueFormIds = [...new Set(forms.map((form) => form.formId))];
+    // Only process Quik forms if they exist
+    let quikPdfs: any[] = [];
+    let quikSignLocations: any[] = [];
+    
+    if (forms.length > 0) {
+      const uniqueFormIds = [...new Set(forms.map((form) => form.formId))];
+      const quikToken = await getQuikToken();
 
-    const quikToken = await getQuikToken();
-
-    const formattedForms = formsWIthDocumentId.map((form) => ({
-      formId: form.formId,
-      documentId: form.documentId,
-      formFields: Object.entries(form.formFields).map(([key, value]) => ({
-        FieldName: key,
-        FieldValue: value,
-      })),
-    }));
-    const [quikPdfs, quikSignLocations] = await Promise.all([
-      generateBulkQuikPdf({
-        token: quikToken,
-        forms: formattedForms,
-      }),
-      fetchBulkQuickPdfSignLocations(quikToken, uniqueFormIds),
-    ]);
+      const formattedForms = formsWIthDocumentId.map((form) => ({
+        formId: form.formId,
+        documentId: form.documentId,
+        formFields: Object.entries(form.formFields).map(([key, value]) => ({
+          FieldName: key,
+          FieldValue: value,
+        })),
+      }));
+      
+      [quikPdfs, quikSignLocations] = await Promise.all([
+        generateBulkQuikPdf({
+          token: quikToken,
+          forms: formattedForms,
+        }),
+        fetchBulkQuickPdfSignLocations(quikToken, uniqueFormIds),
+      ]);
+    }
 
     const docusignToken = await getDocusignToken();
     const { apiBaseUrl, accountId } = await getDocusignBaseUrl(docusignToken);
