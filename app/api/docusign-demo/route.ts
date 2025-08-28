@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 import { getDocusignToken } from "@/lib/api-services/docusign/auth";
 import { getDocusignBaseUrl } from "@/lib/api-services/docusign/base";
 import {
@@ -21,6 +21,10 @@ interface Form {
     firstName: string;
     lastName: string;
     role: SignerRoles;
+  }[];
+  cc?: {
+    name: string;
+    email: string;
   }[];
   formFields: Record<string, string>;
 }
@@ -55,6 +59,39 @@ interface RequestPayload {
 
 const round = (n: number) => Math.round(n);
 
+function getCCArray(
+  startingId: number,
+  formsWithDocumentId?: (Form & { documentId: string })[]
+) {
+  const cc: {
+    name: string;
+    email: string;
+    recipientId: string;
+    routingOrder: string;
+    excludedDocuments: string[];
+  }[] = [];
+  let count = startingId;
+  formsWithDocumentId?.forEach((form) => {
+    form.cc?.forEach((ccData) => {
+      const getCC = cc.find((c) => c.email === ccData.email);
+      if (!getCC) {
+        const excludedDocuments = formsWithDocumentId
+          .filter((form) => !form.cc?.find((c) => c.email === ccData.email))
+          .map((form) => form.documentId);
+        cc.push({
+          name: ccData.name,
+          email: ccData.email,
+          recipientId: count.toString(),
+          routingOrder: "2",
+          excludedDocuments,
+        });
+        count++;
+      }
+    });
+  });
+  return cc;
+}
+
 function createTabsFromSignLocation(
   filteredSignLocation: {
     SignFields: any[];
@@ -87,36 +124,42 @@ function createTabsFromSignLocation(
 
 function processAdditionalPDFSigners(
   additionalPDFs: (AdditionalPDF & { documentId: string })[],
-  existingSignersMap: Map<string, {
-    email: string;
-    name: string;
-    recipientId: string;
-    tabs: Tabs;
-  }>
+  existingSignersMap: Map<
+    string,
+    {
+      email: string;
+      name: string;
+      recipientId: string;
+      tabs: Tabs;
+    }
+  >
 ) {
   additionalPDFs.forEach((pdf) => {
     pdf.signers?.forEach((signer) => {
       const existingSigner = existingSignersMap.get(signer.email);
-      
+
       const newTabs: Tabs = {
-        signHereTabs: signer.signLocations?.signHere?.map(loc => ({
-          documentId: pdf.documentId,
-          xPosition: round(loc.xPosition),
-          yPosition: round(loc.yPosition),
-          pageNumber: loc.pageNumber,
-        })) || [],
-        initialHereTabs: signer.signLocations?.initialHere?.map(loc => ({
-          documentId: pdf.documentId,
-          xPosition: round(loc.xPosition),
-          yPosition: round(loc.yPosition),
-          pageNumber: loc.pageNumber,
-        })) || [],
-        dateSignedTabs: signer.signLocations?.dateSigned?.map(loc => ({
-          documentId: pdf.documentId,
-          xPosition: round(loc.xPosition),
-          yPosition: round(loc.yPosition),
-          pageNumber: loc.pageNumber,
-        })) || [],
+        signHereTabs:
+          signer.signLocations?.signHere?.map((loc) => ({
+            documentId: pdf.documentId,
+            xPosition: round(loc.xPosition),
+            yPosition: round(loc.yPosition),
+            pageNumber: loc.pageNumber,
+          })) || [],
+        initialHereTabs:
+          signer.signLocations?.initialHere?.map((loc) => ({
+            documentId: pdf.documentId,
+            xPosition: round(loc.xPosition),
+            yPosition: round(loc.yPosition),
+            pageNumber: loc.pageNumber,
+          })) || [],
+        dateSignedTabs:
+          signer.signLocations?.dateSigned?.map((loc) => ({
+            documentId: pdf.documentId,
+            xPosition: round(loc.xPosition),
+            yPosition: round(loc.yPosition),
+            pageNumber: loc.pageNumber,
+          })) || [],
         attachmentTabs: [],
       };
 
@@ -142,40 +185,49 @@ function getSignersImproved(
   quikSignLocations: BulkQuikSignLocationResponse[],
   additionalPDFsWithDocumentId: (AdditionalPDF & { documentId: string })[] = []
 ) {
-  const signersMap = new Map<string, {
-    email: string;
-    name: string;
-    recipientId: string;
-    tabs: Tabs;
-  }>();
+  const signersMap = new Map<
+    string,
+    {
+      email: string;
+      name: string;
+      recipientId: string;
+      tabs: Tabs;
+    }
+  >();
 
   // Create a map for faster lookup of sign locations
   const signLocationMap = new Map(
-    quikSignLocations.map(loc => [loc.FormId.toString(), loc])
+    quikSignLocations.map((loc) => [loc.FormId.toString(), loc])
   );
 
   formsWithDocumentId.forEach((form) => {
     const signLocation = signLocationMap.get(form.formId);
-    
+
     if (!signLocation) {
       console.warn(`No sign location found for form ${form.formId}`);
     }
 
     form.signers.forEach((signer) => {
       const filteredSignLocation = {
-        SignFields: signLocation?.SignFields?.filter(
-          (sf) => sf.FieldRole === signer.role
-        ) || [],
-        SignDateFields: signLocation?.SignDateFields?.filter(
-          (sdf) => sdf.FieldRole === signer.role
-        ) || [],
-        SignInitialsFields: signLocation?.SignInitialsFields?.filter(
-          (sif) => sif.FieldRole === signer.role
-        ) || [],
+        SignFields:
+          signLocation?.SignFields?.filter(
+            (sf) => sf.FieldRole === signer.role
+          ) || [],
+        SignDateFields:
+          signLocation?.SignDateFields?.filter(
+            (sdf) => sdf.FieldRole === signer.role
+          ) || [],
+        SignInitialsFields:
+          signLocation?.SignInitialsFields?.filter(
+            (sif) => sif.FieldRole === signer.role
+          ) || [],
       };
 
       const existingSigner = signersMap.get(signer.email);
-      const newTabs = createTabsFromSignLocation(filteredSignLocation, form.documentId);
+      const newTabs = createTabsFromSignLocation(
+        filteredSignLocation,
+        form.documentId
+      );
 
       if (!existingSigner) {
         signersMap.set(signer.email, {
@@ -206,11 +258,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RequestPayload;
 
-    const { emailSubject, forms = [], status = "created", additionalPDFs = [] } = body;
+    const {
+      emailSubject,
+      forms = [],
+      status = "created",
+      additionalPDFs = [],
+    } = body;
 
     // Validate that at least one document source is provided
     if (forms.length === 0 && additionalPDFs.length === 0) {
-      return new Response("At least one form or additional PDF is required", { status: 400 });
+      return new Response("At least one form or additional PDF is required", {
+        status: 400,
+      });
     }
 
     // Assign document IDs: additional PDFs first, then Quik forms
@@ -227,7 +286,7 @@ export async function POST(request: NextRequest) {
     // Only process Quik forms if they exist
     let quikPdfs: any[] = [];
     let quikSignLocations: any[] = [];
-    
+
     if (forms.length > 0) {
       const uniqueFormIds = [...new Set(forms.map((form) => form.formId))];
       const quikToken = await getQuikToken();
@@ -240,7 +299,7 @@ export async function POST(request: NextRequest) {
           FieldValue: value,
         })),
       }));
-      
+
       [quikPdfs, quikSignLocations] = await Promise.all([
         generateBulkQuikPdf({
           token: quikToken,
@@ -254,10 +313,12 @@ export async function POST(request: NextRequest) {
     const { apiBaseUrl, accountId } = await getDocusignBaseUrl(docusignToken);
 
     const signers = getSignersImproved(
-      formsWIthDocumentId, 
+      formsWIthDocumentId,
       quikSignLocations,
       additionalPDFsWithDocumentId
     );
+
+    const cc = getCCArray(signers.length + 1, formsWIthDocumentId);
 
     // Combine additional PDFs first, then Quik PDFs
     const allDocuments = [
@@ -281,6 +342,7 @@ export async function POST(request: NextRequest) {
       status,
       documents: allDocuments,
       signers,
+      cc
     });
     return Response.json(docusignEnvelope);
   } catch (err) {

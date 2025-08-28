@@ -36,6 +36,7 @@ export const createDocusignEnvelope = async ({
   emailSubject,
   signers,
   status = 'sent',
+  cc =[]
 }: {
   token: string;
   documents: {
@@ -53,6 +54,13 @@ export const createDocusignEnvelope = async ({
     tabs: Tabs;
   }[];
   status?: 'created' | 'sent';
+  cc: {
+    name: string;
+    email: string;
+    recipientId: string;
+    routingOrder: string;
+    excludedDocuments: string[];
+  }[];
 }) => {
   const bodyData = {
     documents: documents.map((document) => ({
@@ -64,7 +72,9 @@ export const createDocusignEnvelope = async ({
     emailSubject,
     recipients: {
       signers,
+      carbonCopies: cc
     },
+    enforceSignerVisibility: true,
     status,
   };
 
