@@ -61,7 +61,8 @@ const round = (n: number) => Math.round(n);
 
 function getCCArray(
   startingId: number,
-  formsWithDocumentId?: (Form & { documentId: string })[]
+  formsWithDocumentId?: (Form & { documentId: string })[],
+  additionalPDFsWithDocumentId?: (AdditionalPDF & { documentId: string })[]
 ) {
   const cc: {
     name: string;
@@ -75,9 +76,16 @@ function getCCArray(
     form.cc?.forEach((ccData) => {
       const getCC = cc.find((c) => c.email === ccData.email);
       if (!getCC) {
-        const excludedDocuments = formsWithDocumentId
+        // Exclude forms where this CC is not listed
+        const excludedFormDocuments = formsWithDocumentId
           .filter((form) => !form.cc?.find((c) => c.email === ccData.email))
           .map((form) => form.documentId);
+        
+        // Exclude all additionalPDFs since CCs from forms shouldn't see them
+        const excludedAdditionalPDFDocuments = additionalPDFsWithDocumentId?.map((pdf) => pdf.documentId) || [];
+        
+        const excludedDocuments = [...excludedFormDocuments, ...excludedAdditionalPDFDocuments];
+        
         cc.push({
           name: ccData.name,
           email: ccData.email,
@@ -318,7 +326,7 @@ export async function POST(request: NextRequest) {
       additionalPDFsWithDocumentId
     );
 
-    const cc = getCCArray(signers.length + 1, formsWIthDocumentId);
+    const cc = getCCArray(signers.length + 1, formsWIthDocumentId, additionalPDFsWithDocumentId);
 
     // Combine additional PDFs first, then Quik PDFs
     const allDocuments = [
