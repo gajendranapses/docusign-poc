@@ -54,7 +54,7 @@ export const createDocusignEnvelope = async ({
     tabs: Tabs;
   }[];
   status?: 'created' | 'sent';
-  cc: {
+  cc?: {
     name: string;
     email: string;
     recipientId: string;
@@ -72,7 +72,7 @@ export const createDocusignEnvelope = async ({
     emailSubject,
     recipients: {
       signers,
-      carbonCopies: cc
+      carbonCopies: cc || []
     },
     enforceSignerVisibility: true,
     status,
