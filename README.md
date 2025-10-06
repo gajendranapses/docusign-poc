@@ -38,6 +38,11 @@ GET https://docusign-poc.vercel.app/api/docusign-envelopes/{envelopeId}/status
 GET https://docusign-poc.vercel.app/api/docusign-envelopes/{envelopeId}/signers-status
 ```
 
+### 5. Create Envelope (Prefilled PDF)
+```
+POST https://docusign-poc.vercel.app/api/docusign-demo/prefilled-pdf
+```
+
 ---
 
 ## 📝 Important Notes
@@ -45,6 +50,7 @@ GET https://docusign-poc.vercel.app/api/docusign-envelopes/{envelopeId}/signers-
 - **documentId** and **recipientId** should be unique and positive numbers (e.g. "1", "2", "3", "99")
 - The dynamic forms endpoint supports multiple Quik forms with automatic sign location detection
 - The static form endpoint uses formId: `71259` with predefined signing locations
+- The prefilled PDF endpoint accepts a base64-encoded PDF that's already been filled with data, along with formId to fetch sign locations
 
 ---
 
@@ -428,6 +434,144 @@ Defines each signer.
 
 ---
 
+## 📮 Create Envelope API (Prefilled PDF)
+
+This endpoint accepts a base64-encoded PDF that has already been filled with data, along with the formId to fetch signing locations from Quik, and creates a DocuSign envelope with the specified signers.
+
+### Request Body Format
+
+```json
+{
+  "formId": "71259",
+  "pdfBase64": "JVBERi0xLjQKMSAwIG9iago8PC9UeXBlIC9DYXRhbG9nCi9QYWdlcyAyIDAgUgo+PgplbmRvYmoK...",
+  "signers": [
+    {
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "1own"
+    },
+    {
+      "email": "jane@example.com",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "role": "2own"
+    }
+  ],
+  "emailSubject": "Please sign this document",
+  "status": "sent"
+}
+```
+
+### Response Format
+
+```json
+{
+  "envelopeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "sent"
+}
+```
+
+### Field Reference
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `formId` | string | Yes | Quik form ID to fetch sign locations (e.g., "71259") |
+| `pdfBase64` | string | Yes | Base64-encoded PDF file that's already been filled with data |
+| `signers` | array | Yes | Array of signers (must be non-empty) |
+| `emailSubject` | string | No | Email subject line (default: "Please sign this document") |
+| `status` | string | No | "created" or "sent" (default: "sent") |
+
+### Signer Object
+
+Each signer must include:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | Yes | Signer's email address |
+| `firstName` | string | Yes | Signer's first name |
+| `lastName` | string | Yes | Signer's last name |
+| `role` | string | Yes | Signer role matching Quik field roles (e.g., "1own", "2own", "3own", "4own", "1authind") |
+
+### How It Works
+
+1. **You provide**: A PDF that's already been filled with form data + the formId + signers with their roles
+2. **API fetches**: Sign locations from Quik API based on the formId
+3. **API maps**: Each signer to their signing positions based on their role
+4. **DocuSign creates**: An envelope with the prefilled PDF and sign tabs placed correctly
+
+### Sample Scenarios
+
+#### 1️⃣ Single Signer
+
+```json
+{
+  "formId": "71259",
+  "pdfBase64": "JVBERi0xLjQKMSAwIG9iago...",
+  "signers": [
+    {
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "1own"
+    }
+  ],
+  "emailSubject": "Please review and sign",
+  "status": "sent"
+}
+```
+
+#### 2️⃣ Multiple Signers
+
+```json
+{
+  "formId": "71259",
+  "pdfBase64": "JVBERi0xLjQKMSAwIG9iago...",
+  "signers": [
+    {
+      "email": "alice@example.com",
+      "firstName": "Alice",
+      "lastName": "Johnson",
+      "role": "1own"
+    },
+    {
+      "email": "bob@example.com",
+      "firstName": "Bob",
+      "lastName": "Williams",
+      "role": "2own"
+    },
+    {
+      "email": "charlie@example.com",
+      "firstName": "Charlie",
+      "lastName": "Brown",
+      "role": "3own"
+    }
+  ],
+  "emailSubject": "Partnership Agreement - Please Sign",
+  "status": "sent"
+}
+```
+
+#### 3️⃣ Draft Envelope (Don't Send Yet)
+
+```json
+{
+  "formId": "71259",
+  "pdfBase64": "JVBERi0xLjQKMSAwIG9iago...",
+  "signers": [
+    {
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "1own"
+    }
+  ],
+  "status": "created"
+}
+```
+
+---
+
 ## 📬 Get Envelope Status API
 
 ### Request Parameters
@@ -622,6 +766,21 @@ All APIs return similar error formats:
    - Select: `raw`
    - Format: `JSON`
    - Copy any of the static form sample scenarios above
+5. Click **Send**
+
+### Create Envelope (Prefilled PDF)
+
+1. Open **Postman**
+2. Create a new request:
+   - Method: `POST`
+   - URL: `https://docusign-poc.vercel.app/api/docusign-demo/prefilled-pdf`
+3. Add Headers:
+   - `Content-Type`: `application/json`
+   - `x-api-key`: `<secret-key>` (will be provided separately)
+4. Body:
+   - Select: `raw`
+   - Format: `JSON`
+   - Copy any of the prefilled PDF sample scenarios above
 5. Click **Send**
 
 ### Get Envelope Status
