@@ -32,8 +32,10 @@ export const FORM_REGISTRY: Record<string, FormConfig> = {
     path: path.join(process.cwd(), 'client-forms', 'checking-and-savings-application.pdf'),
     isInteractive: true,
     fieldMapping: {
-      // Account type - special handling for Individual 1/Joint 1 checkboxes
-      accountType: 'accountType', // Will be handled specially in pdf-form-handler
+      // Account types - special handling in pdf-form-handler
+      // savingsAccountType: Individual -> "Individual 4", Joint -> "Joint 4"
+      // checkingAccountType: Individual -> "Individual 1", Joint -> "Joint 1"
+      // moneyMarketAccountType: Individual -> "Individual 5", Joint -> "Joint 5"
 
       // Primary Owner Information
       primaryOwnerName: 'Primary Owners Name/Account Title',

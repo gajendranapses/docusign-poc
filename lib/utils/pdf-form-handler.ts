@@ -102,13 +102,30 @@ export async function fillPdfForm(
     // Fill each field
     for (const [fieldName, fieldValue] of Object.entries(mappedFieldData)) {
       try {
-        // Handle checkbox groups (e.g., accountType: "Individual" or "Joint")
-        // This checks the corresponding checkbox and unchecks others in the group
-        if (fieldName === 'accountType' && typeof fieldValue === 'string') {
+        // Handle specific account type checkboxes
+        // savingsAccountType: Individual -> "Individual 4", Joint -> "Joint 4"
+        if (fieldName === 'savingsAccountType' && typeof fieldValue === 'string') {
           const value = String(fieldValue).toLowerCase();
+          try {
+            const individualCheckbox = form.getCheckBox('Individual 4');
+            const jointCheckbox = form.getCheckBox('Joint 4');
 
-          // Try to find checkbox fields for this group
-          // First try "Individual 1" / "Joint 1" (demo form)
+            if (value === 'individual') {
+              individualCheckbox.check();
+              jointCheckbox.uncheck();
+            } else if (value === 'joint') {
+              jointCheckbox.check();
+              individualCheckbox.uncheck();
+            }
+            continue;
+          } catch (error) {
+            console.warn(`Warning: Could not find checkboxes for savingsAccountType:`, error);
+          }
+        }
+
+        // checkingAccountType: Individual -> "Individual 1", Joint -> "Joint 1"
+        if (fieldName === 'checkingAccountType' && typeof fieldValue === 'string') {
+          const value = String(fieldValue).toLowerCase();
           try {
             const individualCheckbox = form.getCheckBox('Individual 1');
             const jointCheckbox = form.getCheckBox('Joint 1');
@@ -120,24 +137,29 @@ export async function fillPdfForm(
               jointCheckbox.check();
               individualCheckbox.uncheck();
             }
-            continue; // Skip the default field handling
-          } catch {
-            // If those don't exist, try old naming convention
-            try {
-              const individualCheckbox = form.getCheckBox('accountType_individual');
-              const jointCheckbox = form.getCheckBox('accountType_joint');
+            continue;
+          } catch (error) {
+            console.warn(`Warning: Could not find checkboxes for checkingAccountType:`, error);
+          }
+        }
 
-              if (value === 'individual') {
-                individualCheckbox.check();
-                jointCheckbox.uncheck();
-              } else if (value === 'joint') {
-                jointCheckbox.check();
-                individualCheckbox.uncheck();
-              }
-              continue;
-            } catch {
-              // If checkbox fields don't exist, fall through to default handling
+        // moneyMarketAccountType: Individual -> "Individual 5", Joint -> "Joint 5"
+        if (fieldName === 'moneyMarketAccountType' && typeof fieldValue === 'string') {
+          const value = String(fieldValue).toLowerCase();
+          try {
+            const individualCheckbox = form.getCheckBox('Individual 5');
+            const jointCheckbox = form.getCheckBox('Joint 5');
+
+            if (value === 'individual') {
+              individualCheckbox.check();
+              jointCheckbox.uncheck();
+            } else if (value === 'joint') {
+              jointCheckbox.check();
+              individualCheckbox.uncheck();
             }
+            continue;
+          } catch (error) {
+            console.warn(`Warning: Could not find checkboxes for moneyMarketAccountType:`, error);
           }
         }
 
