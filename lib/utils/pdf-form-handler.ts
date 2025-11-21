@@ -80,7 +80,8 @@ export function getStaticFormFields(staticFields: StaticFormField[]): FormFieldI
  */
 export async function fillPdfForm(
   pdfPath: string,
-  fieldData: FillFormFieldData
+  fieldData: FillFormFieldData,
+  fieldMapping?: Record<string, string>
 ): Promise<string> {
   try {
     // Read the PDF file
@@ -90,8 +91,16 @@ export async function fillPdfForm(
     // Get the form
     const form = pdfDoc.getForm();
 
+    // Apply field mapping if provided
+    const mappedFieldData: FillFormFieldData = {};
+    for (const [apiFieldName, fieldValue] of Object.entries(fieldData)) {
+      // If mapping exists, translate API field name to PDF field name
+      const pdfFieldName = fieldMapping?.[apiFieldName] ?? apiFieldName;
+      mappedFieldData[pdfFieldName] = fieldValue;
+    }
+
     // Fill each field
-    for (const [fieldName, fieldValue] of Object.entries(fieldData)) {
+    for (const [fieldName, fieldValue] of Object.entries(mappedFieldData)) {
       try {
         // Handle checkbox groups (e.g., accountType: "Individual" or "Joint")
         // This checks the corresponding checkbox and unchecks others in the group
@@ -99,9 +108,10 @@ export async function fillPdfForm(
           const value = String(fieldValue).toLowerCase();
 
           // Try to find checkbox fields for this group
+          // First try "Individual 1" / "Joint 1" (DCU form)
           try {
-            const individualCheckbox = form.getCheckBox('accountType_individual');
-            const jointCheckbox = form.getCheckBox('accountType_joint');
+            const individualCheckbox = form.getCheckBox('Individual 1');
+            const jointCheckbox = form.getCheckBox('Joint 1');
 
             if (value === 'individual') {
               individualCheckbox.check();
@@ -112,7 +122,22 @@ export async function fillPdfForm(
             }
             continue; // Skip the default field handling
           } catch {
-            // If checkbox fields don't exist, fall through to default handling
+            // If those don't exist, try old naming convention
+            try {
+              const individualCheckbox = form.getCheckBox('accountType_individual');
+              const jointCheckbox = form.getCheckBox('accountType_joint');
+
+              if (value === 'individual') {
+                individualCheckbox.check();
+                jointCheckbox.uncheck();
+              } else if (value === 'joint') {
+                jointCheckbox.check();
+                individualCheckbox.uncheck();
+              }
+              continue;
+            } catch {
+              // If checkbox fields don't exist, fall through to default handling
+            }
           }
         }
 

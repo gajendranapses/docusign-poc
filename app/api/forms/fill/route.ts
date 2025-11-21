@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     // Fill the form based on whether it's interactive or static
     let pdfBase64;
     if (formConfig.isInteractive) {
-      pdfBase64 = await fillPdfForm(formConfig.path, fieldData);
+      pdfBase64 = await fillPdfForm(formConfig.path, fieldData, formConfig.fieldMapping);
     } else {
       if (!formConfig.fields) {
         return new Response(

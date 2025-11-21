@@ -2,22 +2,38 @@
 
 This API allows you to manage and fill PDF forms programmatically. It supports both interactive PDFs (with fillable form fields) and static PDFs (where text is overlaid at specific coordinates).
 
-## New Unified API
+## Authentication
 
-### Fill Any Form (Recommended)
+All API endpoints require authentication using an API key.
+
+**Header Required:**
+
+```bash
+x-api-key: your-api-key-here
+```
+
+The API key is configured in the `.env` file as `API_SECRET_KEY`.
+
+---
+
+## Unified API Endpoint
+
+### Fill Any Form
 
 **POST** `/api/forms/fill`
 
-This is the new unified endpoint that accepts a `formId` along with the field data in a single request body.
+This unified endpoint accepts a `formId` along with the field data in a single request body. The API uses field mapping to translate friendly field names to the actual PDF field names.
 
 **Request Body:**
 
 ```json
 {
-  "formId": "ey-checking-account-application",
-  "firstName": "John",
-  "lastName": "Doe",
-  "accountType": "Individual"
+  "formId": "dcu-checking-savings-application",
+  "accountType": "Individual",
+  "primaryOwnerName": "John Smith",
+  "primaryOwnerSsn": "123-45-6789",
+  "secondaryOwnerFirstName": "Jane",
+  "secondaryOwnerLastName": "Doe"
 }
 ```
 
@@ -25,8 +41,8 @@ This is the new unified endpoint that accepts a `formId` along with the field da
 
 ```json
 {
-  "formId": "ey-checking-account-application",
-  "formName": "EY Checking Account Application",
+  "formId": "dcu-checking-savings-application",
+  "formName": "DCU Checking and Savings Account Application",
   "pdfBase64": "JVBERi0xLjcKJYGBgYEKCjggMCBv..."
 }
 ```
@@ -36,89 +52,29 @@ This is the new unified endpoint that accepts a `formId` along with the field da
 ```bash
 curl -X POST http://localhost:3001/api/forms/fill \
   -H "Content-Type: application/json" \
+  -H "x-api-key: <secret-key>" \
   -d '{
-    "formId": "ey-checking-account-application",
+    "formId": "dcu-checking-savings-application",
     "accountType": "Individual",
-    "primary_firstName": "John",
-    "primary_lastName": "Doe",
-    "primary_email": "john.doe@example.com"
+    "primaryOwnerName": "John Smith",
+    "primaryOwnerSsn": "123-45-6789"
   }'
 ```
 
-To save the PDF to a file:
+**Save PDF to file:**
 
 ```bash
 curl -X POST http://localhost:3001/api/forms/fill \
   -H "Content-Type: application/json" \
+  -H "x-api-key: <secret-key>" \
   -d '{
-    "formId": "ey-checking-account-application",
-    "accountType": "Individual",
-    "primary_firstName": "John",
-    "primary_lastName": "Doe",
-    "primary_email": "john.doe@example.com"
+    "formId": "dcu-checking-savings-application",
+    "accountType": "Joint",
+    "primaryOwnerName": "John Smith",
+    "secondaryOwnerFirstName": "Jane",
+    "secondaryOwnerLastName": "Doe"
   }' | jq -r '.pdfBase64' | base64 -d > filled-form.pdf
 ```
-
-**Special Field Handling:**
-
-- **Checkbox Groups**: For the EY form, use `accountType: "Individual"` or `accountType: "Joint"` to automatically check/uncheck the appropriate checkboxes.
-
-**EY Form Available Fields:**
-
-The `ey-checking-account-application` supports the following fields:
-
-**Account Type:**
-
-- `accountType` - "Individual" or "Joint"
-
-**Primary Owner Information:**
-
-- `primary_firstName` - First name
-- `primary_middleInitial` - Middle initial
-- `primary_lastName` - Last name
-- `primary_suffix` - Suffix (Jr., Sr., etc.)
-- `primary_dob` - Date of birth (MM/DD/YYYY)
-- `primary_ssn` - Social Security Number
-- `primary_occupation` - Occupation
-- `primary_citizenship` - Country of citizenship
-- `primary_email` - Email address
-- `primary_phone` - Phone number
-
-**Home Address:**
-
-- `homeAddress` - Street address
-- `homeCity` - City
-- `homeState` - State
-- `homeZip` - Zip code
-
-**Mailing Address:**
-
-- `mailingAddress` - Street address
-- `mailingCity` - City
-- `mailingState` - State
-- `mailingZip` - Zip code
-
-**Secondary Owner Information (for Joint accounts):**
-
-- `secondary_firstName` - First name
-- `secondary_middleInitial` - Middle initial
-- `secondary_lastName` - Last name
-- `secondary_suffix` - Suffix
-- `secondary_dob` - Date of birth
-- `secondary_ssn` - Social Security Number
-- `secondary_occupation` - Occupation
-- `secondary_citizenship` - Country of citizenship
-- `secondary_email` - Email address
-- `secondary_phone` - Phone number
-
-**Signatures:**
-
-- `primary_printName` - Primary owner printed name
-- `primary_signatureDate` - Primary signature date
-- `primary_signature` - Primary signature (text)
-- `secondary_printName` - Secondary owner printed name
-- `secondary_signatureDate` - Secondary signature date
-- `secondary_signature` - Secondary signature (text)
 
 ---
 
@@ -136,8 +92,8 @@ Returns a list of all available forms.
 {
   "forms": [
     {
-      "id": "ey-checking-account-application",
-      "name": "EY Checking Account Application"
+      "id": "dcu-checking-savings-application",
+      "name": "DCU Checking and Savings Account Application"
     }
   ]
 }
@@ -157,6 +113,8 @@ To add a new form, edit [lib/config/form-registry.ts](lib/config/form-registry.t
 
 ### For Interactive PDFs (with fillable fields)
 
+**Without Field Mapping:**
+
 ```typescript
 'my-form-id': {
   id: 'my-form-id',
@@ -165,6 +123,26 @@ To add a new form, edit [lib/config/form-registry.ts](lib/config/form-registry.t
   isInteractive: true,
 }
 ```
+
+**With Field Mapping (Recommended):**
+
+```typescript
+'my-form-id': {
+  id: 'my-form-id',
+  name: 'My Form Name',
+  path: path.join(process.cwd(), 'client-forms', 'my-form.pdf'),
+  isInteractive: true,
+  fieldMapping: {
+    // API field name -> PDF field name
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    email: 'Email Address',
+    // ... more mappings
+  },
+}
+```
+
+Field mapping allows you to use friendly API field names that get translated to the actual PDF field names.
 
 ### For Static PDFs
 
@@ -194,7 +172,7 @@ To add a new form, edit [lib/config/form-registry.ts](lib/config/form-registry.t
 
 ### Files
 
-- [lib/config/form-registry.ts](lib/config/form-registry.ts) - Form configuration registry
+- [lib/config/form-registry.ts](lib/config/form-registry.ts) - Form configuration registry with field mappings
 - [lib/utils/pdf-form-handler.ts](lib/utils/pdf-form-handler.ts) - PDF manipulation utilities
 - [app/api/forms/route.ts](app/api/forms/route.ts) - List all forms endpoint
 - [app/api/forms/fill/route.ts](app/api/forms/fill/route.ts) - Unified fill form endpoint
@@ -202,6 +180,14 @@ To add a new form, edit [lib/config/form-registry.ts](lib/config/form-registry.t
 ### Dependencies
 
 - `pdf-lib` - PDF manipulation library
+
+### How Field Mapping Works
+
+1. Client sends request with friendly field names (e.g., `primaryOwnerName`)
+2. API looks up field mapping in form configuration
+3. API translates friendly names to PDF field names (e.g., `Primary Owners Name/Account Title`)
+4. PDF is filled using the actual PDF field names
+5. Filled PDF is returned as base64
 
 ---
 
@@ -215,3 +201,75 @@ The API supports the following field types:
 - **radio** - Radio button groups
 - **signature** - Signature fields (for static PDFs)
 - **date** - Date fields
+
+---
+
+## Error Responses
+
+### 401 Unauthorized
+
+Missing or invalid API key
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid or missing API key"
+}
+```
+
+### 400 Bad Request
+
+Missing required fields
+
+```json
+{
+  "error": "Bad Request",
+  "message": "Request body must contain a \"formId\" field"
+}
+```
+
+### 404 Not Found
+
+Form ID not found
+
+```json
+{
+  "error": "Form not found",
+  "message": "No form found with ID: invalid-form-id"
+}
+```
+
+### 500 Internal Server Error
+
+Server or processing error
+
+```json
+{
+  "error": "Internal Server Error",
+  "message": "Failed to fill PDF form: [error details]"
+}
+```
+
+---
+
+## Setup
+
+1. Copy `.env.example` to `.env`:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Set your API key in `.env`:
+
+   ```bash
+   API_SECRET_KEY=your-secret-api-key-here
+   ```
+
+3. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+4. The API will be available at `http://localhost:3001`
