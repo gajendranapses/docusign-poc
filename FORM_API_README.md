@@ -28,7 +28,7 @@ This unified endpoint accepts a `formId` along with the field data in a single r
 
 ```json
 {
-  "formId": "dcu-checking-savings-application",
+  "formId": "demo-checking-savings-application",
   "accountType": "Individual",
   "primaryOwnerName": "John Smith",
   "primaryOwnerSsn": "123-45-6789",
@@ -41,8 +41,8 @@ This unified endpoint accepts a `formId` along with the field data in a single r
 
 ```json
 {
-  "formId": "dcu-checking-savings-application",
-  "formName": "DCU Checking and Savings Account Application",
+  "formId": "demo-checking-savings-application",
+  "formName": "demo Checking and Savings Account Application",
   "pdfBase64": "JVBERi0xLjcKJYGBgYEKCjggMCBv..."
 }
 ```
@@ -54,7 +54,7 @@ curl -X POST http://localhost:3001/api/forms/fill \
   -H "Content-Type: application/json" \
   -H "x-api-key: <secret-key>" \
   -d '{
-    "formId": "dcu-checking-savings-application",
+    "formId": "demo-checking-savings-application",
     "accountType": "Individual",
     "primaryOwnerName": "John Smith",
     "primaryOwnerSsn": "123-45-6789"
@@ -68,7 +68,7 @@ curl -X POST http://localhost:3001/api/forms/fill \
   -H "Content-Type: application/json" \
   -H "x-api-key: <secret-key>" \
   -d '{
-    "formId": "dcu-checking-savings-application",
+    "formId": "demo-checking-savings-application",
     "accountType": "Joint",
     "primaryOwnerName": "John Smith",
     "secondaryOwnerFirstName": "Jane",
@@ -92,8 +92,8 @@ Returns a list of all available forms.
 {
   "forms": [
     {
-      "id": "dcu-checking-savings-application",
-      "name": "DCU Checking and Savings Account Application"
+      "id": "demo-checking-savings-application",
+      "name": "demo Checking and Savings Account Application"
     }
   ]
 }

@@ -108,7 +108,7 @@ export async function fillPdfForm(
           const value = String(fieldValue).toLowerCase();
 
           // Try to find checkbox fields for this group
-          // First try "Individual 1" / "Joint 1" (DCU form)
+          // First try "Individual 1" / "Joint 1" (demo form)
           try {
             const individualCheckbox = form.getCheckBox('Individual 1');
             const jointCheckbox = form.getCheckBox('Joint 1');

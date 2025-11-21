@@ -26,9 +26,9 @@ export interface FormConfig {
 
 // Map of form IDs to their file paths
 export const FORM_REGISTRY: Record<string, FormConfig> = {
-  'dcu-checking-savings-application': {
-    id: 'dcu-checking-savings-application',
-    name: 'DCU Checking and Savings Account Application',
+  'demo-checking-savings-application': {
+    id: 'demo-checking-savings-application',
+    name: 'demo Checking and Savings Account Application',
     path: path.join(process.cwd(), 'client-forms', 'checking-and-savings-application.pdf'),
     isInteractive: true,
     fieldMapping: {
